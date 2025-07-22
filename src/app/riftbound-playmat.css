@@ -1,0 +1,118 @@
+/* Riftbound Playmat CSS Design */
+
+.playmat-container {
+  position: relative;
+  width: 1200px;
+  height: 800px;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* Hexagon Column */
+.hexagon-column {
+  position: absolute;
+  left: 60px;
+  top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 70px;
+}
+
+.hexagon {
+  width: 50px;
+  height: 57.74px;
+  background: transparent;
+  border: 3px solid #000000;
+  position: relative;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* Top Section - Open Zones */
+.top-section {
+  position: absolute;
+  left: 170px;
+  top: 60px;
+  display: flex;
+  gap: 50px;
+}
+
+.open-zone {
+  width: 100px;
+  height: 80px;
+  position: relative;
+}
+
+.open-zone::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #000000;
+}
+
+.open-zone::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #000000;
+}
+
+.open-zone .right-line {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 3px;
+  background: #000000;
+}
+
+/* Middle Section - 3 Rectangles */
+.middle-section {
+  position: absolute;
+  left: 170px;
+  top: 160px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.vertical-rectangle {
+  width: 60px;
+  height: 120px;
+  border: 3px solid #000000;
+  background: transparent;
+}
+
+.horizontal-rectangle {
+  width: 750px;
+  height: 80px;
+  border: 3px solid #000000;
+  background: transparent;
+}
+
+/* Bottom Section - 2 Rectangles */
+.bottom-section {
+  position: absolute;
+  left: 170px;
+  top: 300px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .playmat-container {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3/2;
+  }
+  
+  .horizontal-rectangle {
+    width: calc(100% - 200px);
+  }
+} 
