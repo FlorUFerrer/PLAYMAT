@@ -23,7 +23,94 @@ interface OverlayImage {
   width: number;
   height: number;
   opacity: number;
+  filters: {
+    hue: number;        // 0-360 degrees for hue rotation
+    brightness: number; // 0-200 percentage
+    contrast: number;   // 0-200 percentage  
+    saturate: number;   // 0-200 percentage
+    invert: number;     // 0-100 percentage
+    sepia?: number;     // 0-100 percentage for uniform color changes (optional)
+  };
 }
+
+// Configuración de modelos de Riftbound con variantes de color
+const RIFTBOUND_MODELS = {
+  'classic': {
+    name: 'Clásico',
+    description: 'Diseño tradicional de Riftbound',
+    imagePath: '/assets/playmat/riftbound/classic.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'classic-white': {
+    name: 'Classic White',
+    description: 'Diseño clásico en blanco',
+    imagePath: '/assets/playmat/riftbound/classic.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 100 }
+  }, 
+  'nature-original': {
+    name: 'Nature Original',
+    description: 'Diseño con elementos naturales',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'nature-dark-green': {
+    name: 'Nature Gris',
+    description: 'Diseño natural en gris',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 95, brightness: 85, contrast: 115, saturate: 110, invert: 0 }
+  },
+  'nature-azul': {
+    name: 'Nature Azul',
+    description: 'Diseño natural en azul vibrante',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 120, brightness: 110, contrast: 125, saturate: 150, invert: 0 }
+  },
+  'nature-violeta': {
+    name: 'Nature Violeta',
+    description: 'Diseño natural en violeta vibrante',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 150, brightness: 140, contrast: 140, saturate: 200, invert: 0 }
+  },
+  'nature-verde': {
+    name: 'Nature Verde',
+    description: 'Diseño natural en verde',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 0, brightness: 150, contrast: 160, saturate: 250, invert: 0 }
+  },
+  'nature-rojo': {
+    name: 'Nature Rojo',
+    description: 'Diseño natural en rojo vibrante',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 270, brightness: 150, contrast: 160, saturate: 250, invert: 0 }
+  }, 
+  'nature-white': {
+    name: 'Nature White',
+    description: 'Diseño natural en blanco',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 100 }
+  },
+  'nature-black': {
+    name: 'Nature Black',
+    description: 'Diseño natural en negro',
+    imagePath: '/assets/playmat/riftbound/nature.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
+  }
+  
+  /* Modelos futuros - descomentar cuando estén las imágenes disponibles
+  'tournament-original': {
+    name: 'Torneo Original',
+    description: 'Edición especial para torneos',
+    imagePath: '/assets/playmat/riftbound/tournament.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'tournament-gold': {
+    name: 'Torneo Gold',
+    description: 'Edición torneo en dorado',
+    imagePath: '/assets/playmat/riftbound/tournament.png',
+    filters: { hue: 45, brightness: 130, contrast: 110, saturate: 150, invert: 0 }
+  }
+  */
+};
 
 // Configuraciones de playmats prearmados
 const PREDEFINED_PLAYMATS = {
@@ -74,6 +161,7 @@ export default function PlaymatEditor() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [lastUsedColor, setLastUsedColor] = useState<string>('#FF0000');
   const [showGrid, setShowGrid] = useState(false);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -143,7 +231,14 @@ export default function PlaymatEditor() {
         y: 0,
         width: DISPLAY_WIDTH,
         height: DISPLAY_HEIGHT,
-        opacity: 1
+        opacity: 1,
+        filters: {
+          hue: 0,
+          brightness: 100,
+          contrast: 100,
+          saturate: 100,
+          invert: 0
+        }
       });
       console.log('Overlay configurado:', {
         src: '/assets/playmat/riftbound.png',
@@ -163,6 +258,58 @@ export default function PlaymatEditor() {
     setShapes(newShapes);
     setSelectedShape(null);
     setShowGrid(true); // Activar cuadrícula automáticamente
+  };
+
+  const loadRiftboundModel = (modelKey: keyof typeof RIFTBOUND_MODELS) => {
+    const model = RIFTBOUND_MODELS[modelKey];
+    
+    console.log(`Cargando modelo de Riftbound: ${model.name}...`);
+    setOverlayImage({
+      src: model.imagePath,
+      x: 0,
+      y: 0,
+      width: DISPLAY_WIDTH,
+      height: DISPLAY_HEIGHT,
+      opacity: 1,
+      filters: model.filters // Usar los filtros predefinidos del modelo
+    });
+    
+    // No cargar formas prediseñadas para riftbound, solo la imagen
+    setShapes([]);
+    setSelectedShape(null);
+    setShowGrid(true); // Activar cuadrícula automáticamente
+  };
+
+  const updateOverlayFilters = (newFilters: Partial<OverlayImage['filters']>) => {
+    if (overlayImage) {
+      setOverlayImage({
+        ...overlayImage,
+        filters: {
+          ...overlayImage.filters,
+          ...newFilters
+        }
+      });
+    }
+  };
+
+  const resetOverlayFilters = () => {
+    if (overlayImage) {
+      setOverlayImage({
+        ...overlayImage,
+        filters: {
+          hue: 0,
+          brightness: 100,
+          contrast: 100,
+          saturate: 100,
+          invert: 0
+        }
+      });
+    }
+  };
+
+  const getCSSFilter = (filters: OverlayImage['filters']) => {
+    const sepia = filters.sepia || 0;
+    return `sepia(${sepia}%) hue-rotate(${filters.hue}deg) brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%) invert(${filters.invert}%)`;
   };
 
   const handleMouseDown = (e: React.MouseEvent, shapeId: string) => {
@@ -321,8 +468,11 @@ export default function PlaymatEditor() {
           const scaledWidth = overlayImage.width * scaleX;
           const scaledHeight = overlayImage.height * scaleY;
           
+          // Apply CSS filters using canvas filter
+          ctx.filter = getCSSFilter(overlayImage.filters);
           ctx.globalAlpha = overlayImage.opacity;
           ctx.drawImage(overlayImg, scaledX, scaledY, scaledWidth, scaledHeight);
+          ctx.filter = 'none'; // Reset filter
           ctx.globalAlpha = 1;
           
           console.log('Background and overlay drawn, drawing shapes...');
@@ -404,8 +554,11 @@ export default function PlaymatEditor() {
             const scaledWidth = overlayImage.width * scaleX;
             const scaledHeight = overlayImage.height * scaleY;
             
+            // Apply CSS filters using canvas filter
+            ctx.filter = getCSSFilter(overlayImage.filters);
             ctx.globalAlpha = overlayImage.opacity;
             ctx.drawImage(overlayImg, scaledX, scaledY, scaledWidth, scaledHeight);
+            ctx.filter = 'none'; // Reset filter
             ctx.globalAlpha = 1;
             
             // Draw all shapes
@@ -654,6 +807,7 @@ export default function PlaymatEditor() {
                         width: overlayImage.width,
                         height: overlayImage.height,
                         opacity: overlayImage.opacity,
+                        filter: getCSSFilter(overlayImage.filters),
                         pointerEvents: 'none'
                       }}
                     />
@@ -959,18 +1113,34 @@ export default function PlaymatEditor() {
                </p>
                
                <div className="space-y-2">
-                 <button
-                   onClick={() => loadPredefinedPlaymat('riftbound')}
-                   className="w-full p-3 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 text-left"
-                 >
-                   <div className="flex items-center justify-between">
+                 {/* Riftbound Models with Select */}
+                 <div className="border-2 border-gray-500 rounded-lg bg-gray-600 p-3">
+                   <div className="flex items-center gap-2 mb-3">
+                     <span className="text-2xl">🎮</span>
                      <div>
-                       <h3 className="font-semibold text-white">Riftbound Playmat</h3>
-                       <p className="text-sm text-gray-300">Diseño específico para Riftbound con hexágonos y zonas de cartas</p>
+                       <h3 className="font-semibold text-white">Riftbound Playmats</h3>
+                       <p className="text-sm text-gray-300">11 opciones disponibles</p>
                      </div>
-                     <div className="text-2xl">🎮</div>
                    </div>
-                 </button>
+                   
+                   <select
+                     onChange={(e) => {
+                       if (e.target.value) {
+                         loadRiftboundModel(e.target.value as keyof typeof RIFTBOUND_MODELS);
+                         e.target.value = ''; // Reset select after selection
+                       }
+                     }}
+                     className="w-full p-2 border border-gray-400 rounded bg-gray-700 text-white focus:border-blue-400 focus:outline-none"
+                     defaultValue=""
+                   >
+                     <option value="" disabled>Selecciona un modelo...</option>
+                     {Object.entries(RIFTBOUND_MODELS).map(([key, model]) => (
+                       <option key={key} value={key}>
+                         {model.name} - {model.description}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
                  
                  <button
                    onClick={() => loadPredefinedPlaymat('magic')}
