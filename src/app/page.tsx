@@ -2,10 +2,11 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import NextImage from 'next/image';
+import ChangeHistoryIcon from '@mui/icons-material/ChangeHistory';
 
 interface Shape {
   id: string;
-  type: 'rectangle' | 'circle' | 'hexagon' | 'triangle';
+  type: 'rectangle' | 'circle' | 'hexagon' | 'triangle' | 'wideRectangle';
   x: number;
   y: number;
   width: number;
@@ -15,13 +16,64 @@ interface Shape {
   strokeWidth: number;
 }
 
+interface OverlayImage {
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+}
+
+// Configuraciones de playmats prearmados
+const PREDEFINED_PLAYMATS = {
+  riftbound: {
+    name: 'Riftbound Playmat',
+    description: 'Diseño específico para Riftbound con hexágonos y zonas de cartas',
+    shapes: [] // Sin formas prediseñadas, solo imagen superpuesta
+  },
+  magic: {
+    name: 'Magic: The Gathering Playmat',
+    description: 'Diseño estándar para MTG con zonas de biblioteca, cementerio y mano',
+    shapes: [
+      // Biblioteca
+      { type: 'rectangle', x: 50, y: 50, width: 100, height: 140, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      // Cementerio
+      { type: 'rectangle', x: 170, y: 50, width: 100, height: 140, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      // Campo de batalla
+      { type: 'wideRectangle', x: 300, y: 100, width: 400, height: 200, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      // Mano
+      { type: 'wideRectangle', x: 50, y: 350, width: 650, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+    ]
+  },
+  pokemon: {
+    name: 'Pokémon TCG Playmat',
+    description: 'Diseño para Pokémon con zonas de Pokémon activo, banco y mano',
+    shapes: [
+      // Pokémon activo
+      { type: 'rectangle', x: 350, y: 150, width: 120, height: 160, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      // Banco (6 espacios)
+      { type: 'rectangle', x: 50, y: 50, width: 80, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      { type: 'rectangle', x: 150, y: 50, width: 80, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      { type: 'rectangle', x: 250, y: 50, width: 80, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      { type: 'rectangle', x: 550, y: 50, width: 80, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      { type: 'rectangle', x: 650, y: 50, width: 80, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      { type: 'rectangle', x: 750, y: 50, width: 80, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+      // Mano
+      { type: 'wideRectangle', x: 50, y: 350, width: 700, height: 100, color: '#FF0000', rotation: 0, strokeWidth: 3 },
+    ]
+  }
+};
+
 export default function PlaymatEditor() {
   const [backgroundImage, setBackgroundImage] = useState<string>('');
+  const [overlayImage, setOverlayImage] = useState<OverlayImage | null>(null);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedShape, setSelectedShape] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [lastUsedColor, setLastUsedColor] = useState<string>('#FF0000');
+  const [showGrid, setShowGrid] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,10 +103,10 @@ export default function PlaymatEditor() {
       type,
       x: 100,
       y: 100,
-      width: type === 'rectangle' ? 50 : 80,
-      height: type === 'rectangle' ? 75 : 80,
+      width: type === 'rectangle' ? 75 : type === 'wideRectangle' ? 600 : 80,
+      height: type === 'rectangle' ? 100 : type === 'wideRectangle' ? 100 : 80,
       color: lastUsedColor,
-      rotation: type === 'rectangle' ? 180 : 0,
+      rotation: type === 'rectangle' || type === 'wideRectangle' ? 180 : 0,
       strokeWidth: 3
     };
     setShapes([...shapes, newShape]);
@@ -77,6 +129,40 @@ export default function PlaymatEditor() {
     if (selectedShape === id) {
       setSelectedShape(null);
     }
+  };
+
+  const loadPredefinedPlaymat = (playmatKey: keyof typeof PREDEFINED_PLAYMATS) => {
+    const playmat = PREDEFINED_PLAYMATS[playmatKey];
+    
+    // Para Riftbound, cargar imagen superpuesta sin formas prediseñadas
+    if (playmatKey === 'riftbound') {
+      console.log('Cargando overlay de Riftbound...');
+      setOverlayImage({
+        src: '/assets/playmat/riftbound.png',
+        x: 0,
+        y: 0,
+        width: DISPLAY_WIDTH,
+        height: DISPLAY_HEIGHT,
+        opacity: 1
+      });
+      console.log('Overlay configurado:', {
+        src: '/assets/playmat/riftbound.png',
+        width: DISPLAY_WIDTH,
+        height: DISPLAY_HEIGHT
+      });
+    } else {
+      setOverlayImage(null); // No cargar overlay para otros playmats
+    }
+    
+    const newShapes: Shape[] = playmat.shapes.map((shape, index) => ({
+      ...shape,
+      id: `predefined-${playmatKey}-${Date.now()}-${index}`,
+      type: shape.type as Shape['type']
+    }));
+    
+    setShapes(newShapes);
+    setSelectedShape(null);
+    setShowGrid(true); // Activar cuadrícula automáticamente
   };
 
   const handleMouseDown = (e: React.MouseEvent, shapeId: string) => {
@@ -117,14 +203,28 @@ export default function PlaymatEditor() {
     setIsDragging(false);
   };
 
+  // Función para manejar teclas presionadas
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Delete' && selectedShape) {
+      e.preventDefault();
+      deleteShape(selectedShape);
+    }
+  }, [selectedShape, deleteShape]);
+
+  // Agregar y remover event listener
+  React.useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   const drawShape = (ctx: CanvasRenderingContext2D, shape: Shape) => {
     ctx.save();
     
     // Scale from display size to download size
-    const DOWNLOAD_WIDTH = 2400;
-    const DOWNLOAD_HEIGHT = 1400;
-    const scaleX = DOWNLOAD_WIDTH / 800;
-    const scaleY = DOWNLOAD_HEIGHT / 467;
+    const scaleX = ctx.canvas.width / DISPLAY_WIDTH;
+    const scaleY = ctx.canvas.height / DISPLAY_HEIGHT;
     
     // Scale shape properties
     const scaledX = shape.x * scaleX;
@@ -141,19 +241,21 @@ export default function PlaymatEditor() {
 
     switch (shape.type) {
       case 'rectangle':
+      case 'wideRectangle':
         ctx.strokeRect(-scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
         break;
       case 'circle':
         ctx.beginPath();
-        ctx.arc(0, 0, scaledWidth / 2, 0, 2 * Math.PI);
+        ctx.arc(0, 0, Math.min(scaledWidth, scaledHeight) / 2, 0, 2 * Math.PI);
         ctx.stroke();
         break;
       case 'hexagon':
         ctx.beginPath();
+        const radius = Math.min(scaledWidth, scaledHeight) / 2;
         for (let i = 0; i < 6; i++) {
           const angle = (i * Math.PI) / 3;
-          const x = (scaledWidth / 2) * Math.cos(angle);
-          const y = (scaledHeight / 2) * Math.sin(angle);
+          const x = radius * Math.cos(angle);
+          const y = radius * Math.sin(angle);
           if (i === 0) ctx.moveTo(x, y);
           else ctx.lineTo(x, y);
         }
@@ -206,10 +308,42 @@ export default function PlaymatEditor() {
       // Draw background image with proper scaling
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
-      console.log('Background drawn, drawing shapes...');
-      // Draw all shapes
-      shapes.forEach(shape => drawShape(ctx, shape));
-      console.log('Playmat generated successfully');
+      // Draw overlay image if exists
+      if (overlayImage) {
+        const overlayImg = new window.Image();
+        overlayImg.crossOrigin = 'anonymous';
+        overlayImg.onload = () => {
+          // Scale overlay image to match canvas size
+          const scaleX = canvas.width / DISPLAY_WIDTH;
+          const scaleY = canvas.height / DISPLAY_HEIGHT;
+          const scaledX = overlayImage.x * scaleX;
+          const scaledY = overlayImage.y * scaleY;
+          const scaledWidth = overlayImage.width * scaleX;
+          const scaledHeight = overlayImage.height * scaleY;
+          
+          ctx.globalAlpha = overlayImage.opacity;
+          ctx.drawImage(overlayImg, scaledX, scaledY, scaledWidth, scaledHeight);
+          ctx.globalAlpha = 1;
+          
+          console.log('Background and overlay drawn, drawing shapes...');
+          // Draw all shapes
+          shapes.forEach(shape => drawShape(ctx, shape));
+          console.log('Playmat generated successfully');
+        };
+        overlayImg.onerror = (error) => {
+          console.error('Error loading overlay image:', error);
+          // Continue without overlay
+          console.log('Background drawn, drawing shapes...');
+          shapes.forEach(shape => drawShape(ctx, shape));
+          console.log('Playmat generated successfully');
+        };
+        overlayImg.src = overlayImage.src;
+      } else {
+        console.log('Background drawn, drawing shapes...');
+        // Draw all shapes
+        shapes.forEach(shape => drawShape(ctx, shape));
+        console.log('Playmat generated successfully');
+      }
     };
     img.onerror = (error) => {
       console.error('Error loading background image:', error);
@@ -240,9 +374,9 @@ export default function PlaymatEditor() {
         return;
       }
 
-      // Set canvas size for download (reduced for better compatibility)
-      const DOWNLOAD_WIDTH = 2400; // 8" at 300 DPI
-      const DOWNLOAD_HEIGHT = 1400; // 4.67" at 300 DPI
+      // Set canvas size for download (high quality for printing)
+      const DOWNLOAD_WIDTH = PLAYMAT_WIDTH; // 7080px (23.6" at 300 DPI)
+      const DOWNLOAD_HEIGHT = PLAYMAT_HEIGHT; // 4140px (13.8" at 300 DPI)
       canvas.width = DOWNLOAD_WIDTH;
       canvas.height = DOWNLOAD_HEIGHT;
 
@@ -257,17 +391,59 @@ export default function PlaymatEditor() {
         // Draw background image
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        // Draw all shapes
-        shapes.forEach(shape => drawShape(ctx, shape));
-        
-        // Download the generated playmat
-        console.log('Playmat generated, starting download...');
-        const dataURL = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = 'playmat-personalizado.png';
-        link.href = dataURL;
-        link.click();
-        console.log('Download completed');
+        // Draw overlay image if exists
+        if (overlayImage) {
+          const overlayImg = new window.Image();
+          overlayImg.crossOrigin = 'anonymous';
+          overlayImg.onload = () => {
+            // Scale overlay image to match canvas size
+            const scaleX = canvas.width / DISPLAY_WIDTH;
+            const scaleY = canvas.height / DISPLAY_HEIGHT;
+            const scaledX = overlayImage.x * scaleX;
+            const scaledY = overlayImage.y * scaleY;
+            const scaledWidth = overlayImage.width * scaleX;
+            const scaledHeight = overlayImage.height * scaleY;
+            
+            ctx.globalAlpha = overlayImage.opacity;
+            ctx.drawImage(overlayImg, scaledX, scaledY, scaledWidth, scaledHeight);
+            ctx.globalAlpha = 1;
+            
+            // Draw all shapes
+            shapes.forEach(shape => drawShape(ctx, shape));
+            
+            // Download the generated playmat
+            console.log('Playmat generated, starting download...');
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'playmat-personalizado.png';
+            link.href = dataURL;
+            link.click();
+            console.log('Download completed');
+          };
+          overlayImg.onerror = (error) => {
+            console.error('Error loading overlay image:', error);
+            // Continue without overlay
+            shapes.forEach(shape => drawShape(ctx, shape));
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'playmat-personalizado.png';
+            link.href = dataURL;
+            link.click();
+          };
+          overlayImg.src = overlayImage.src;
+        } else {
+          // Draw all shapes
+          shapes.forEach(shape => drawShape(ctx, shape));
+          
+          // Download the generated playmat
+          console.log('Playmat generated, starting download...');
+          const dataURL = canvas.toDataURL('image/png');
+          const link = document.createElement('a');
+          link.download = 'playmat-personalizado.png';
+          link.href = dataURL;
+          link.click();
+          console.log('Download completed');
+        }
       };
       img.onerror = (error) => {
         console.error('Error loading background image:', error);
@@ -284,8 +460,8 @@ export default function PlaymatEditor() {
   const selectedShapeData = shapes.find(s => s.id === selectedShape);
 
   return (
-    <div className="min-h-screen bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-900 py-8" style={{ userSelect: 'none', outline: 'none' }}>
+      <div className="max-w-[1600px] mx-auto px-4">
         <h1 className="text-3xl font-bold text-center mb-4 text-white">
           Editor de Playmat Personalizable
         </h1>
@@ -293,9 +469,9 @@ export default function PlaymatEditor() {
           Dimensiones para impresión: 23.6" × 13.8" (7080 × 4140 píxeles a 300 DPI)
         </p>
 
-                 <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
+                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
            {/* Left Panel - Controls */}
-           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1 bg-gray-800 p-8 rounded-lg">
+           <div className="lg:col-span-3 space-y-6 order-2 lg:order-1 bg-gray-800 p-8 rounded-lg">
                          {/* Image Upload */}
              <div className="bg-gray-700 rounded-lg shadow-lg p-8">
                <h2 className="text-xl font-semibold mb-4 text-white">Subir imagen de Fondo</h2>
@@ -331,7 +507,7 @@ export default function PlaymatEditor() {
                   </div>
                 </div>
               )}
-            </div>
+                         </div>
 
                          {/* Shape Tools */}
              <div className="bg-gray-700 rounded-lg shadow-lg p-8">
@@ -351,38 +527,43 @@ export default function PlaymatEditor() {
                    </div>
                  </div>
                </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <button
                   onClick={() => addShape('rectangle')}
-                  className="p-6 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600"
+                  className="p-8 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 flex flex-col items-center justify-center min-h-[120px]"
                 >
-                  <div className="w-8 h-10 border-2 border-gray-300 mx-auto mb-2"></div>
-                  <span className="text-sm text-white">Rectángulo</span>
+                  <div className="w-8 h-10 border-2 border-gray-300 mb-3"></div>
+                  <span className="text-sm text-white text-center leading-tight">Carta</span>
                 </button>
                 <button
                   onClick={() => addShape('circle')}
-                  className="p-6 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600"
+                  className="p-8 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 flex flex-col items-center justify-center min-h-[120px]"
                 >
-                  <div className="w-8 h-8 border-2 border-gray-300 rounded-full mx-auto mb-2"></div>
-                  <span className="text-sm text-white">Círculo</span>
+                  <div className="w-8 h-8 border-2 border-gray-300 rounded-full mb-3"></div>
+                  <span className="text-sm text-white text-center leading-tight">Círculo</span>
                 </button>
                 <button
                   onClick={() => addShape('hexagon')}
-                  className="p-6 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600"
+                  className="p-8 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 flex flex-col items-center justify-center min-h-[120px]"
                 >
-                  <svg className="w-8 h-8 mx-auto mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-8 h-8 mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M12 2L22 8.5V15.5L12 22L2 15.5V8.5L12 2Z" stroke="#9CA3AF"/>
                   </svg>
-                  <span className="text-sm text-white">Hexágono</span>
+                  <span className="text-sm text-white text-center leading-tight">Hexágono</span>
                 </button>
                 <button
                   onClick={() => addShape('triangle')}
-                  className="p-6 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600"
+                  className="p-8 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 flex flex-col items-center justify-center min-h-[120px]"
                 >
-                  <div className="w-8 h-8 border-2 border-gray-300 mx-auto mb-2" style={{
-                    clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-                  }}></div>
-                  <span className="text-sm text-white">Triángulo</span>
+                  <ChangeHistoryIcon className="w-8 h-8 mb-3 text-gray-300" />
+                  <span className="text-sm text-white text-center leading-tight">Triángulo</span>
+                </button>
+                <button
+                  onClick={() => addShape('wideRectangle')}
+                  className="p-8 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 flex flex-col items-center justify-center min-h-[120px]"
+                >
+                  <div className="w-12 h-6 border-2 border-gray-300 mb-3"></div>
+                  <span className="text-sm text-white text-center leading-tight">Rectángulo</span>
                 </button>
               </div>
             </div>
@@ -393,9 +574,28 @@ export default function PlaymatEditor() {
           </div>
 
                      {/* Main Canvas Area */}
-           <div className="lg:col-span-5 order-1 lg:order-2">
+           <div className="lg:col-span-7 order-1 lg:order-2">
                         <div className="bg-gray-800 rounded-lg shadow-lg p-6">
-                              <h2 className="text-xl font-semibold mb-4 text-white">Editor de Playmat</h2>
+                              <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-semibold text-white">Editor de Playmat</h2>
+                                <div className="flex items-center gap-3">
+                                  {showGrid && (
+                                    <div className="bg-blue-900 border border-blue-600 rounded-lg px-3 py-2 text-sm text-blue-200">
+                                      💡 La cuadrícula solo es visual y no aparecerá en la descarga
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => setShowGrid(!showGrid)}
+                                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                      showGrid 
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                                        : 'bg-gray-600 text-white hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {showGrid ? 'Ocultar Cuadrícula' : 'Mostrar Cuadrícula'}
+                                  </button>
+                                </div>
+                              </div>
               
                              <div className="flex justify-center">
                                <div 
@@ -414,6 +614,20 @@ export default function PlaymatEditor() {
                  onMouseLeave={handleMouseLeave}
                  onClick={() => setSelectedShape(null)}
                >
+                 {/* Cuadrícula punteada - solo visible en previsualización */}
+                 {showGrid && (
+                   <div 
+                     className="absolute inset-0 pointer-events-none z-10"
+                     style={{
+                       backgroundImage: `
+                         linear-gradient(rgba(0,0,0,0.5) 1px, transparent 1px),
+                         linear-gradient(90deg, rgba(0,0,0,0.5) 1px, transparent 1px)
+                       `,
+                       backgroundSize: '20px 20px',
+                       backgroundPosition: '0 0'
+                     }}
+                   />
+                 )}
                 {backgroundImage && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-full h-full flex items-center justify-center">
@@ -423,6 +637,26 @@ export default function PlaymatEditor() {
                         className="w-full h-full object-cover"
                       />
                     </div>
+                  </div>
+                )}
+                
+                {overlayImage && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <img
+                      src={overlayImage.src}
+                      alt="Overlay"
+                      onLoad={() => console.log('Overlay image loaded successfully')}
+                      onError={(e) => console.error('Error loading overlay image:', e)}
+                      style={{
+                        position: 'absolute',
+                        left: overlayImage.x,
+                        top: overlayImage.y,
+                        width: overlayImage.width,
+                        height: overlayImage.height,
+                        opacity: overlayImage.opacity,
+                        pointerEvents: 'none'
+                      }}
+                    />
                   </div>
                 )}
                 
@@ -446,7 +680,7 @@ export default function PlaymatEditor() {
                        setSelectedShape(shape.id);
                      }}
                    >
-                     {shape.type === 'rectangle' && (
+                     {(shape.type === 'rectangle' || shape.type === 'wideRectangle') && (
                        <div
                          className="w-full h-full bg-transparent"
                          style={{ 
@@ -467,41 +701,69 @@ export default function PlaymatEditor() {
                        />
                      )}
                      {shape.type === 'hexagon' && (
-                       <div
-                         className="w-full h-full bg-transparent"
-                         style={{ 
-                           borderColor: shape.color,
-                           borderStyle: 'solid',
-                           borderWidth: `${shape.strokeWidth}px`,
-                           clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
-                         }}
-                       />
+                       <svg
+                         width="100%"
+                         height="100%"
+                         viewBox="0 0 100 100"
+                         style={{ position: 'absolute', top: 0, left: 0 }}
+                       >
+                         <polygon
+                           points="50,10 90,25 90,75 50,90 10,75 10,25"
+                           fill="transparent"
+                           stroke={shape.color}
+                           strokeWidth={shape.strokeWidth}
+                         />
+                       </svg>
                      )}
                      {shape.type === 'triangle' && (
-                       <div
-                         className="w-full h-full bg-transparent"
-                         style={{ 
-                           borderColor: shape.color,
-                           borderStyle: 'solid',
-                           borderWidth: `${shape.strokeWidth}px`,
-                           clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-                         }}
-                       />
+                       <svg
+                         width="100%"
+                         height="100%"
+                         viewBox="0 0 100 100"
+                         style={{ position: 'absolute', top: 0, left: 0 }}
+                       >
+                         <polygon
+                           points="50,10 10,90 90,90"
+                           fill="transparent"
+                           stroke={shape.color}
+                           strokeWidth={shape.strokeWidth}
+                         />
+                       </svg>
                      )}
                      
-                     {/* Delete button for each shape - only show when selected */}
+                     {/* Control buttons for each shape - only show when selected */}
                      {selectedShape === shape.id && (
-                       <button
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           deleteShape(shape.id);
-                         }}
-                         className="absolute -top-3 -right-3 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-700 transition-colors z-20 shadow-lg"
-                         title="Eliminar forma"
-                         style={{ pointerEvents: 'auto' }}
-                       >
-                         ×
-                       </button>
+                       <>
+                         <button
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             deleteShape(shape.id);
+                           }}
+                           className="absolute -top-3 -right-3 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-700 transition-colors z-20 shadow-lg"
+                           title="Eliminar forma"
+                           style={{ pointerEvents: 'auto' }}
+                         >
+                           ×
+                         </button>
+                         <button
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             const newShape: Shape = {
+                               ...shape,
+                               id: Date.now().toString(),
+                               x: shape.x + 20,
+                               y: shape.y + 20
+                             };
+                             setShapes([...shapes, newShape]);
+                             setSelectedShape(newShape.id);
+                           }}
+                           className="absolute -top-3 -left-3 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-blue-700 transition-colors z-20 shadow-lg"
+                           title="Duplicar forma"
+                           style={{ pointerEvents: 'auto' }}
+                         >
+                           +
+                         </button>
+                       </>
                      )}
                    </div>
                  ))}
@@ -559,6 +821,7 @@ export default function PlaymatEditor() {
                            max="650"
                            value={selectedShapeData.width}
                            onChange={(e) => updateShape(selectedShapeData.id, { width: parseInt(e.target.value) || 20 })}
+                           onKeyDown={(e) => e.stopPropagation()}
                            className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
                          />
                          <span className="text-sm text-gray-300">px</span>
@@ -584,6 +847,7 @@ export default function PlaymatEditor() {
                            max="400"
                            value={selectedShapeData.height}
                            onChange={(e) => updateShape(selectedShapeData.id, { height: parseInt(e.target.value) || 20 })}
+                           onKeyDown={(e) => e.stopPropagation()}
                            className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
                          />
                          <span className="text-sm text-gray-300">px</span>
@@ -609,6 +873,7 @@ export default function PlaymatEditor() {
                            max="360"
                            value={selectedShapeData.rotation}
                            onChange={(e) => updateShape(selectedShapeData.id, { rotation: parseInt(e.target.value) || 0 })}
+                           onKeyDown={(e) => e.stopPropagation()}
                            className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
                          />
                          <span className="text-sm text-gray-300">°</span>
@@ -634,6 +899,7 @@ export default function PlaymatEditor() {
                            max="25"
                            value={selectedShapeData.strokeWidth}
                            onChange={(e) => updateShape(selectedShapeData.id, { strokeWidth: parseInt(e.target.value) || 1 })}
+                           onKeyDown={(e) => e.stopPropagation()}
                            className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
                          />
                          <span className="text-sm text-gray-300">px</span>
@@ -680,6 +946,61 @@ export default function PlaymatEditor() {
                  >
                    Limpiar Todo
                  </button>
+               </div>
+             </div>
+           </div>
+
+           {/* Right Panel - Predefined Playmats */}
+           <div className="lg:col-span-2 order-3 bg-gray-800 p-4 rounded-lg">
+             <div className="bg-gray-700 rounded-lg shadow-lg p-4">
+               <h2 className="text-xl font-semibold mb-4 text-white">Playmats Prearmados</h2>
+               <p className="text-sm text-gray-300 mb-4">
+                 Carga diseños predefinidos y personalízalos según tus necesidades
+               </p>
+               
+               <div className="space-y-2">
+                 <button
+                   onClick={() => loadPredefinedPlaymat('riftbound')}
+                   className="w-full p-3 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 text-left"
+                 >
+                   <div className="flex items-center justify-between">
+                     <div>
+                       <h3 className="font-semibold text-white">Riftbound Playmat</h3>
+                       <p className="text-sm text-gray-300">Diseño específico para Riftbound con hexágonos y zonas de cartas</p>
+                     </div>
+                     <div className="text-2xl">🎮</div>
+                   </div>
+                 </button>
+                 
+                 <button
+                   onClick={() => loadPredefinedPlaymat('magic')}
+                   className="w-full p-3 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 text-left"
+                 >
+                   <div className="flex items-center justify-between">
+                     <div>
+                       <h3 className="font-semibold text-white">Magic: The Gathering</h3>
+                       <p className="text-sm text-gray-300">Diseño estándar para MTG con zonas de biblioteca, cementerio y mano</p>
+                     </div>
+                     <div className="text-2xl">🃏</div>
+                   </div>
+                 </button>
+                 
+                 <button
+                   onClick={() => loadPredefinedPlaymat('pokemon')}
+                   className="w-full p-3 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 text-left"
+                 >
+                   <div className="flex items-center justify-between">
+                     <div>
+                       <h3 className="font-semibold text-white">Pokémon TCG</h3>
+                       <p className="text-sm text-gray-300">Diseño para Pokémon con zonas de Pokémon activo, banco y mano</p>
+                     </div>
+                     <div className="text-2xl">⚡</div>
+                   </div>
+                 </button>
+               </div>
+               
+               <div className="mt-3 p-2 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
+                 💡 Al cargar un playmat prearmado, se activará automáticamente la cuadrícula para ayudarte con el posicionamiento
                </div>
              </div>
            </div>
