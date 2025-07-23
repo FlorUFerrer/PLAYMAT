@@ -292,10 +292,20 @@ export default function PlaymatEditor() {
     }
   };
 
+  const updateOverlayOpacity = (opacity: number) => {
+    if (overlayImage) {
+      setOverlayImage({
+        ...overlayImage,
+        opacity: opacity
+      });
+    }
+  };
+
   const resetOverlayFilters = () => {
     if (overlayImage) {
       setOverlayImage({
         ...overlayImage,
+        opacity: 1, // Reset opacity to 100%
         filters: {
           hue: 0,
           brightness: 100,
@@ -1066,6 +1076,48 @@ export default function PlaymatEditor() {
                        Eliminar Forma
                      </button>
                    </div>
+                 </div>
+               </div>
+             )}
+
+             {/* Overlay Controls Panel */}
+             {overlayImage && (
+               <div className="mt-4 bg-gray-700 rounded-lg shadow-lg p-4">
+                 <div className="flex justify-between items-center mb-4">
+                   <h3 className="text-lg font-semibold text-white">Controles de Imagen</h3>
+                   <button
+                     onClick={resetOverlayFilters}
+                     className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm"
+                   >
+                     Resetear
+                   </button>
+                 </div>
+                 
+                 <div className="space-y-4">
+                   {/* Opacity Control */}
+                   <div>
+                     <label className="block text-sm font-medium mb-2 text-white">
+                       Transparencia: {Math.round(overlayImage.opacity * 100)}%
+                     </label>
+                     <input
+                       type="range"
+                       min="0"
+                       max="1"
+                       step="0.01"
+                       value={overlayImage.opacity}
+                       onChange={(e) => updateOverlayOpacity(parseFloat(e.target.value))}
+                       className="w-full"
+                     />
+                     <div className="flex justify-between text-xs text-gray-300 mt-1">
+                       <span>0% (Invisible)</span>
+                       <span>50% (Semi-transparente)</span>
+                       <span>100% (Opaco)</span>
+                     </div>
+                   </div>
+                 </div>
+
+                 <div className="mt-4 p-3 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
+                   💡 <strong>Tip:</strong> Baja la transparencia para crear efectos sutiles o combinar con tu imagen de fondo
                  </div>
                </div>
              )}
