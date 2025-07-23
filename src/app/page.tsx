@@ -161,6 +161,7 @@ export default function PlaymatEditor() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [lastUsedColor, setLastUsedColor] = useState<string>('#FF0000');
   const [showGrid, setShowGrid] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<keyof typeof RIFTBOUND_MODELS | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -264,6 +265,7 @@ export default function PlaymatEditor() {
     const model = RIFTBOUND_MODELS[modelKey];
     
     console.log(`Cargando modelo de Riftbound: ${model.name}...`);
+    setSelectedModel(modelKey); // Guardar el modelo seleccionado
     setOverlayImage({
       src: model.imagePath,
       x: 0,
@@ -302,17 +304,12 @@ export default function PlaymatEditor() {
   };
 
   const resetOverlayFilters = () => {
-    if (overlayImage) {
+    if (overlayImage && selectedModel) {
+      const originalModel = RIFTBOUND_MODELS[selectedModel as keyof typeof RIFTBOUND_MODELS];
       setOverlayImage({
         ...overlayImage,
         opacity: 1, // Reset opacity to 100%
-        filters: {
-          hue: 0,
-          brightness: 100,
-          contrast: 100,
-          saturate: 100,
-          invert: 0
-        }
+        filters: originalModel.filters // Volver a los filtros originales del modelo seleccionado
       });
     }
   };
