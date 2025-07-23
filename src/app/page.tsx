@@ -1119,7 +1119,7 @@ export default function PlaymatEditor() {
                      <span className="text-2xl">🎮</span>
                      <div>
                        <h3 className="font-semibold text-white">Riftbound Playmats</h3>
-                       <p className="text-sm text-gray-300">11 opciones disponibles</p>
+                       <p className="text-sm text-gray-300">10 opciones disponibles</p>
                      </div>
                    </div>
                    
@@ -1204,6 +1204,68 @@ export default function PlaymatEditor() {
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="mt-12 bg-gray-800 rounded-lg shadow-lg p-6">
+          <div className="text-center">
+            <h3 className="text-xl font-semibold mb-4 text-white">¡Gracias por usar nuestro editor!</h3>
+            
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                {/* Sugerencias y Contacto */}
+                <div className="bg-gray-700 rounded-lg p-4">
+                  <div className="text-2xl mb-2">💌</div>
+                  <h4 className="font-semibold text-white mb-2">Sugerencias & Diseños</h4>
+                  <p className="text-sm text-gray-300 mb-3">
+                    ¿Tienes ideas o quieres agregar nuevos diseños? ¡Contáctanos!
+                  </p>
+                  <a 
+                    href="mailto:infoor3d@gmail.com" 
+                    className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                  >
+                    📧 infoor3d@gmail.com
+                  </a>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Aceptamos sugerencias y colaboraciones
+                  </p>
+                </div>
+
+              {/* Créditos Diseño */}
+              <div className="bg-gray-700 rounded-lg p-4">
+                <div className="text-2xl mb-2">🎨</div>
+                <h4 className="font-semibold text-white mb-2">Diseños</h4>
+                <p className="text-sm text-gray-300">
+                  Diseños de playmats prearmados creados con amor por
+                </p>
+                <p className="font-medium text-blue-400 mt-1">Facu Godoy</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Especialista en diseños únicos para TCG
+                </p>
+              </div>
+
+              {/* Créditos Desarrollo */}
+              <div className="bg-gray-700 rounded-lg p-4">
+                <div className="text-2xl mb-2">💻</div>
+                <h4 className="font-semibold text-white mb-2">Desarrollo</h4>
+                <p className="text-sm text-gray-300">
+                  Editor desarrollado con React + Next.js por
+                </p>
+                <p className="font-medium text-purple-400 mt-1">Florurre</p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Desarrolladora Full Stack apasionada por los juegos
+                </p>
+              </div>
+            </div>
+
+            {/* Línea inferior */}
+            <div className="border-t border-gray-600 pt-4">
+              <p className="text-sm text-gray-400">
+                Hecho con ❤️ para la comunidad de TCG • 
+                <span className="mx-2">🎮</span>
+                ¡Crea playmats únicos y personaliza tu experiencia de juego!
+              </p>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );
