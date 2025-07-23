@@ -618,9 +618,7 @@ export default function PlaymatEditor() {
         <h1 className="text-3xl font-bold text-center mb-4 text-white">
           Editor de Playmat Personalizable
         </h1>
-        <p className="text-center text-gray-300 mb-8">
-          Dimensiones para impresión: 23.6" × 13.8" (7080 × 4140 píxeles a 300 DPI)
-        </p>
+      
 
                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
            {/* Left Panel - Controls */}
@@ -1190,7 +1188,7 @@ export default function PlaymatEditor() {
                 <li>Genera y descarga tu playmat</li>
               </ol>
               <div className="mt-3 p-2 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
-                📏 El playmat se genera en tamaño completo para impresión (23.6" × 13.8")
+                📏 El playmat se genera en tamaño completo para impresión 
               </div>
             </div>
             <div>
