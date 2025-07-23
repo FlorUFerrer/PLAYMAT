@@ -94,7 +94,19 @@ const RIFTBOUND_MODELS = {
     description: 'Diseño natural en negro',
     imagePath: '/assets/playmat/riftbound/nature.png',
     filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
-  }
+  },
+  'fancy-white': {
+    name: 'Fancy White',
+    description: 'Diseño elegante en blanco',
+    imagePath: '/assets/playmat/riftbound/fancy.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 100 }
+  },
+  'fancy-black': {
+    name: 'Fancy Black',
+    description: 'Diseño elegante en negro',
+    imagePath: '/assets/playmat/riftbound/fancy.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
+  },  
   
   /* Modelos futuros - descomentar cuando estén las imágenes disponibles
   'tournament-original': {
@@ -116,7 +128,7 @@ const RIFTBOUND_MODELS = {
 const PREDEFINED_PLAYMATS = {
   riftbound: {
     name: 'Riftbound Playmat',
-    description: 'Diseño específico para Riftbound con hexágonos y zonas de cartas',
+    description: 'Diseño específico para Riftbound',
     shapes: [] // Sin formas prediseñadas, solo imagen superpuesta
   },
   magic: {
@@ -1164,10 +1176,10 @@ export default function PlaymatEditor() {
                  <div className="border-2 border-gray-500 rounded-lg bg-gray-600 p-3">
                    <div className="flex items-center gap-2 mb-3">
                      <span className="text-2xl">🎮</span>
-                     <div>
-                       <h3 className="font-semibold text-white">Riftbound Playmats</h3>
-                       <p className="text-sm text-gray-300">10 opciones disponibles</p>
-                     </div>
+                                            <div>
+                         <h3 className="font-semibold text-white">Riftbound Playmats</h3>                    
+                         <p className="text-sm text-gray-300">13 opciones disponibles</p>
+                       </div>
                    </div>
                    
                    <select
