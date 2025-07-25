@@ -701,6 +701,31 @@ export default function PlaymatEditor() {
     img.src = backgroundImage;
   }, [backgroundImage, shapes]);
 
+  const drawLogo = (ctx: CanvasRenderingContext2D, logo: Logo, logoImg: HTMLImageElement) => {
+    ctx.save();
+    
+    // Scale from display size to download size
+    const scaleX = ctx.canvas.width / DISPLAY_WIDTH;
+    const scaleY = ctx.canvas.height / DISPLAY_HEIGHT;
+    
+    // Scale logo properties
+    const scaledX = logo.x * scaleX;
+    const scaledY = logo.y * scaleY;
+    const scaledWidth = logo.width * scaleX;
+    const scaledHeight = logo.height * scaleY;
+    
+    // Apply transforms
+    ctx.translate(scaledX + scaledWidth / 2, scaledY + scaledHeight / 2);
+    ctx.rotate((logo.rotation * Math.PI) / 180);
+    ctx.globalAlpha = logo.opacity;
+    ctx.filter = getLogoFilter(logo.filters);
+    
+    // Draw logo
+    ctx.drawImage(logoImg, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+    
+    ctx.restore();
+  };
+
   const downloadPlaymat = () => {
     if (!canvasRef.current || !backgroundImage) {
       console.log('Canvas ref or background image missing');
@@ -736,54 +761,109 @@ export default function PlaymatEditor() {
         // Draw background image
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        // Draw overlay image if exists
-        if (overlayImage) {
-          const overlayImg = new window.Image();
-          overlayImg.crossOrigin = 'anonymous';
-          overlayImg.onload = () => {
-            // Scale overlay image to match canvas size
-            const scaleX = canvas.width / DISPLAY_WIDTH;
-            const scaleY = canvas.height / DISPLAY_HEIGHT;
-            const scaledX = overlayImage.x * scaleX;
-            const scaledY = overlayImage.y * scaleY;
-            const scaledWidth = overlayImage.width * scaleX;
-            const scaledHeight = overlayImage.height * scaleY;
-            
-            // Apply CSS filters using canvas filter
-            ctx.filter = getCSSFilter(overlayImage.filters);
-            ctx.globalAlpha = overlayImage.opacity;
-            ctx.drawImage(overlayImg, scaledX, scaledY, scaledWidth, scaledHeight);
-            ctx.filter = 'none'; // Reset filter
-            ctx.globalAlpha = 1;
-            
-            // Draw all shapes
-            shapes.forEach(shape => drawShape(ctx, shape));
-            
-            // Download the generated playmat
-            console.log('Playmat generated, starting download...');
-            const dataURL = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = 'playmat-personalizado.png';
-            link.href = dataURL;
-            link.click();
-            console.log('Download completed');
-          };
-          overlayImg.onerror = (error) => {
-            console.error('Error loading overlay image:', error);
-            // Continue without overlay
-            shapes.forEach(shape => drawShape(ctx, shape));
-            const dataURL = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = 'playmat-personalizado.png';
-            link.href = dataURL;
-            link.click();
-          };
-          overlayImg.src = overlayImage.src;
-        } else {
+        // Function to draw logos behind overlay
+        const drawLogosBehindsOverlay = () => {
+          const logosBehind = logos.filter(logo => logo.layer === 'behind');
+          let loadedLogos = 0;
+          
+          if (logosBehind.length === 0) {
+            // No logos behind, continue with overlay
+            drawOverlayAndRest();
+            return;
+          }
+          
+          logosBehind.forEach(logo => {
+            const logoImg = new window.Image();
+            logoImg.crossOrigin = 'anonymous';
+            logoImg.onload = () => {
+              drawLogo(ctx, logo, logoImg);
+              loadedLogos++;
+              if (loadedLogos === logosBehind.length) {
+                drawOverlayAndRest();
+              }
+            };
+            logoImg.onerror = () => {
+              console.error('Error loading logo:', logo.src);
+              loadedLogos++;
+              if (loadedLogos === logosBehind.length) {
+                drawOverlayAndRest();
+              }
+            };
+            logoImg.src = logo.src;
+          });
+        };
+        
+        // Function to draw overlay and remaining elements
+        const drawOverlayAndRest = () => {
+          if (overlayImage) {
+            const overlayImg = new window.Image();
+            overlayImg.crossOrigin = 'anonymous';
+            overlayImg.onload = () => {
+              // Scale overlay image to match canvas size
+              const scaleX = canvas.width / DISPLAY_WIDTH;
+              const scaleY = canvas.height / DISPLAY_HEIGHT;
+              const scaledX = overlayImage.x * scaleX;
+              const scaledY = overlayImage.y * scaleY;
+              const scaledWidth = overlayImage.width * scaleX;
+              const scaledHeight = overlayImage.height * scaleY;
+              
+              // Apply CSS filters using canvas filter
+              ctx.filter = getCSSFilter(overlayImage.filters);
+              ctx.globalAlpha = overlayImage.opacity;
+              ctx.drawImage(overlayImg, scaledX, scaledY, scaledWidth, scaledHeight);
+              ctx.filter = 'none'; // Reset filter
+              ctx.globalAlpha = 1;
+              
+              drawFinalElements();
+            };
+            overlayImg.onerror = (error) => {
+              console.error('Error loading overlay image:', error);
+              drawFinalElements();
+            };
+            overlayImg.src = overlayImage.src;
+          } else {
+            drawFinalElements();
+          }
+        };
+        
+        // Function to draw shapes and front logos, then download
+        const drawFinalElements = () => {
           // Draw all shapes
           shapes.forEach(shape => drawShape(ctx, shape));
           
-          // Download the generated playmat
+          // Draw logos in front of overlay
+          const logosFront = logos.filter(logo => logo.layer === 'front');
+          let loadedFrontLogos = 0;
+          
+          if (logosFront.length === 0) {
+            // No front logos, download immediately
+            downloadCanvas();
+            return;
+          }
+          
+          logosFront.forEach(logo => {
+            const logoImg = new window.Image();
+            logoImg.crossOrigin = 'anonymous';
+            logoImg.onload = () => {
+              drawLogo(ctx, logo, logoImg);
+              loadedFrontLogos++;
+              if (loadedFrontLogos === logosFront.length) {
+                downloadCanvas();
+              }
+            };
+            logoImg.onerror = () => {
+              console.error('Error loading front logo:', logo.src);
+              loadedFrontLogos++;
+              if (loadedFrontLogos === logosFront.length) {
+                downloadCanvas();
+              }
+            };
+            logoImg.src = logo.src;
+          });
+        };
+        
+        // Function to download the canvas
+        const downloadCanvas = () => {
           console.log('Playmat generated, starting download...');
           const dataURL = canvas.toDataURL('image/png');
           const link = document.createElement('a');
@@ -791,7 +871,10 @@ export default function PlaymatEditor() {
           link.href = dataURL;
           link.click();
           console.log('Download completed');
-        }
+        };
+        
+        // Start the drawing process
+        drawLogosBehindsOverlay();
       };
       img.onerror = (error) => {
         console.error('Error loading background image:', error);
