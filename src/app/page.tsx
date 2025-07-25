@@ -157,6 +157,46 @@ const RIFTBOUND_MODELS = {
   */
 };
 
+// Configuración de playmats armados disponibles
+const AVAILABLE_PLAYMATS = {
+  'cait': {
+    name: 'Cait',
+    description: 'Playmat de Caitlyn',
+    imagePath: '/assets/playmat/cait.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'akali': {
+    name: 'Akali',
+    description: 'Playmat de Akali',
+    imagePath: '/assets/playmat/akali.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'blitz': {
+    name: 'Blitz',
+    description: 'Playmat de Blitzcrank',
+    imagePath: '/assets/playmat/blitz.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'poros': {
+    name: 'Poros',
+    description: 'Playmat de Poros',
+    imagePath: '/assets/playmat/poros.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'riven': {
+    name: 'Riven',
+    description: 'Playmat de Riven',
+    imagePath: '/assets/playmat/riven.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'varus': {
+    name: 'Varus',
+    description: 'Playmat de Varus',
+    imagePath: '/assets/playmat/varus.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  }
+};
+
 // Configuración de logos disponibles
 const AVAILABLE_LOGOS = {
   'lol': {
@@ -238,6 +278,7 @@ export default function PlaymatEditor() {
   const [lastUsedColor, setLastUsedColor] = useState<string>('#FF0000');
   const [showGrid, setShowGrid] = useState(false);
   const [selectedModel, setSelectedModel] = useState<keyof typeof RIFTBOUND_MODELS | null>(null);
+  const [selectedPlaymat, setSelectedPlaymat] = useState<keyof typeof AVAILABLE_PLAYMATS | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -441,6 +482,22 @@ export default function PlaymatEditor() {
     setShowGrid(true); // Activar cuadrícula automáticamente
   };
 
+  const loadPlaymat = (playmatKey: keyof typeof AVAILABLE_PLAYMATS) => {
+    const playmat = AVAILABLE_PLAYMATS[playmatKey];
+    
+    console.log(`Cargando playmat: ${playmat.name}...`);
+    setSelectedPlaymat(playmatKey); // Guardar el playmat seleccionado
+    
+    // Cargar el playmat como imagen de fondo
+    setBackgroundImage(playmat.imagePath);
+    
+    // Limpiar overlay y formas
+    setOverlayImage(null);
+    setShapes([]);
+    setSelectedShape(null);
+    // No activar cuadrícula automáticamente para playmats armados
+  };
+
   const updateOverlayFilters = (newFilters: Partial<OverlayImage['filters']>) => {
     if (overlayImage) {
       setOverlayImage({
@@ -471,6 +528,98 @@ export default function PlaymatEditor() {
         filters: originalModel.filters // Volver a los filtros originales del modelo seleccionado
       });
     }
+  };
+
+  const downloadTemplate = () => {
+    if (!selectedModel) {
+      alert('Por favor, selecciona una plantilla primero.');
+      return;
+    }
+
+    const model = RIFTBOUND_MODELS[selectedModel];
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Set canvas size for download (high quality for printing)
+      const DOWNLOAD_WIDTH = PLAYMAT_WIDTH; // 7080px (23.6" at 300 DPI)
+      const DOWNLOAD_HEIGHT = PLAYMAT_HEIGHT; // 4140px (13.8" at 300 DPI)
+      canvas.width = DOWNLOAD_WIDTH;
+      canvas.height = DOWNLOAD_HEIGHT;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Apply filters
+      ctx.filter = getCSSFilter(model.filters);
+      
+      // Draw the template image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Download the image
+      const dataURL = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `plantilla-${selectedModel}.png`;
+      link.href = dataURL;
+      link.click();
+    };
+    
+    img.onerror = (error) => {
+      console.error('Error loading template image:', error);
+      alert('Error al cargar la imagen de la plantilla. Por favor, intenta de nuevo.');
+    };
+    
+    img.src = model.imagePath;
+  };
+
+  const downloadPlaymatArmado = () => {
+    if (!selectedPlaymat) {
+      alert('Por favor, selecciona un playmat primero.');
+      return;
+    }
+
+    const playmat = AVAILABLE_PLAYMATS[selectedPlaymat];
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Set canvas size for download (high quality for printing)
+      const DOWNLOAD_WIDTH = PLAYMAT_WIDTH; // 7080px (23.6" at 300 DPI)
+      const DOWNLOAD_HEIGHT = PLAYMAT_HEIGHT; // 4140px (13.8" at 300 DPI)
+      canvas.width = DOWNLOAD_WIDTH;
+      canvas.height = DOWNLOAD_HEIGHT;
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Apply filters
+      ctx.filter = getCSSFilter(playmat.filters);
+      
+      // Draw the playmat image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Download the image
+      const dataURL = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `playmat-${selectedPlaymat}.png`;
+      link.href = dataURL;
+      link.click();
+    };
+    
+    img.onerror = (error) => {
+      console.error('Error loading playmat image:', error);
+      alert('Error al cargar la imagen del playmat. Por favor, intenta de nuevo.');
+    };
+    
+    img.src = playmat.imagePath;
   };
 
   const getCSSFilter = (filters: OverlayImage['filters']) => {
@@ -1739,20 +1888,29 @@ export default function PlaymatEditor() {
            {/* Right Panel - Predefined Playmats */}
            <div className="lg:col-span-2 order-3 bg-gray-800 p-4 rounded-lg">
              <div className="bg-gray-700 rounded-lg shadow-lg p-4">
-               <h2 className="text-xl font-semibold mb-4 text-white">Playmats Prearmados</h2>
+               <h2 className="text-xl font-semibold mb-4 text-white">Plantillas Prearmadas</h2>
                <p className="text-sm text-gray-300 mb-4">
-                 Carga diseños predefinidos y personalízalos según tus necesidades
+                 Carga plantillas y personalízalas según tus necesidades
                </p>
                
                <div className="space-y-2">
                  {/* Riftbound Models with Select */}
                  <div className="border-2 border-gray-500 rounded-lg bg-gray-600 p-3">
-                   <div className="flex items-center gap-2 mb-3">
-                     <span className="text-2xl">🎮</span>
-                                            <div>
-                         <h3 className="font-semibold text-white">Riftbound Playmats</h3>                    
-                         <p className="text-sm text-gray-300">15 opciones disponibles</p>
+                   <div className="flex items-center justify-between mb-3">
+                      <div>
+                         <h3 className="font-semibold text-white">Plantillas</h3>                    
                        </div>
+                       {selectedModel && (
+                         <button
+                           onClick={downloadTemplate}
+                           className="relative group bg-transparent hover:bg-gray-700 text-white p-2 rounded-lg text-lg transition-colors flex items-center justify-center"
+                         >
+                           <span role="img" aria-label="Descargar plantilla">⬇️</span>
+                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                             Puedes descargar solo la plantilla
+                           </div>
+                         </button>
+                       )}
                    </div>
                    
                    <select
@@ -1774,7 +1932,49 @@ export default function PlaymatEditor() {
                    </select>
                  </div>
                  
-                 <button
+                 <div className="mt-3 p-2 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
+                   💡 Al cargar una plantilla, se activará automáticamente la cuadrícula para ayudarte con el posicionamiento
+                 </div>
+                 
+                 {/* Playmats Armados */}
+                 <div className="border-2 border-gray-500 rounded-lg bg-gray-600 p-3 mt-4">
+                   <div className="flex items-center justify-between mb-3">
+                      <div>
+                         <h3 className="font-semibold text-white">Playmats armados con relieve</h3>                    
+                       </div>
+                       {selectedPlaymat && (
+                         <button
+                           onClick={downloadPlaymatArmado}
+                           className="relative group bg-transparent hover:bg-gray-700 text-white p-2 rounded-lg text-lg transition-colors flex items-center justify-center"
+                         >
+                           <span role="img" aria-label="Descargar playmat">⬇️</span>
+                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                             Puedes descargar solo el playmat
+                           </div>
+                         </button>
+                       )}
+                   </div>
+                   
+                   <select
+                     onChange={(e) => {
+                       if (e.target.value) {
+                         loadPlaymat(e.target.value as keyof typeof AVAILABLE_PLAYMATS);
+                         e.target.value = ''; // Reset select after selection
+                       }
+                     }}
+                     className="w-full p-2 border border-gray-400 rounded bg-gray-700 text-white focus:border-blue-400 focus:outline-none"
+                     defaultValue=""
+                   >
+                     <option value="" disabled>Selecciona un playmat...</option>
+                     {Object.entries(AVAILABLE_PLAYMATS).map(([key, playmat]) => (
+                       <option key={key} value={key}>
+                         {playmat.name} - {playmat.description}
+                       </option>
+                     ))}
+                   </select>
+                 </div>
+                 
+                 {/* <button
                    onClick={() => loadPredefinedPlaymat('magic')}
                    className="w-full p-3 border-2 border-gray-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-gray-600 text-left"
                  >
@@ -1798,11 +1998,7 @@ export default function PlaymatEditor() {
                      </div>
                      <div className="text-2xl">⚡</div>
                    </div>
-                 </button>
-               </div>
-               
-               <div className="mt-3 p-2 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
-                 💡 Al cargar un playmat prearmado, se activará automáticamente la cuadrícula para ayudarte con el posicionamiento
+                 </button> */}
                </div>
              </div>
            </div>
