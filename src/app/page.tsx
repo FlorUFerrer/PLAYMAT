@@ -16,6 +16,27 @@ interface Shape {
   strokeWidth: number;
 }
 
+interface Logo {
+  id: string;
+  src: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+  rotation: number;
+  layer: 'behind' | 'front'; // 'behind' = detrás del overlay, 'front' = delante del overlay
+  aspectRatio: number; // width/height ratio original del logo
+  filters: {
+    hue: number;        // 0-360 degrees for hue rotation
+    brightness: number; // 0-200 percentage
+    contrast: number;   // 0-200 percentage  
+    saturate: number;   // 0-200 percentage
+    invert: number;     // 0-100 percentage
+    sepia?: number;     // 0-100 percentage for uniform color changes (optional)
+  };
+}
+
 interface OverlayImage {
   src: string;
   x: number;
@@ -106,7 +127,19 @@ const RIFTBOUND_MODELS = {
     description: 'Diseño elegante en negro',
     imagePath: '/assets/playmat/riftbound/fancy.png',
     filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
-  },  
+  },
+  'fancy-logo-original': {
+    name: 'Fancy con Logo',
+    description: 'Diseño elegante con logo original',
+    imagePath: '/assets/playmat/riftbound/fancyLogo.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'fancy-logo-black': {
+    name: 'Fancy con Logo Negro',
+    description: 'Diseño elegante con logo en negro',
+    imagePath: '/assets/playmat/riftbound/fancyLogo.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
+  },
   
   /* Modelos futuros - descomentar cuando estén las imágenes disponibles
   'tournament-original': {
@@ -122,6 +155,34 @@ const RIFTBOUND_MODELS = {
     filters: { hue: 45, brightness: 130, contrast: 110, saturate: 150, invert: 0 }
   }
   */
+};
+
+// Configuración de logos disponibles
+const AVAILABLE_LOGOS = {
+  'lol': {
+    name: 'League of Legends',
+    description: 'Logo de League of Legends',
+    imagePath: '/assets/playmat/logo/logoLol.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'lol-black': {
+    name: 'League of Legends Negro',
+    description: 'Logo de League of Legends en negro',
+    imagePath: '/assets/playmat/logo/logoLol.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'riftbound': {
+    name: 'Riftbound',
+    description: 'Logo de Riftbound',
+    imagePath: '/assets/playmat/logo/logoRiftBound.png',
+    filters: { hue: 0, brightness: 100, contrast: 100, saturate: 100, invert: 0 }
+  },
+  'riftbound-black': {
+    name: 'Riftbound Negro',
+    description: 'Logo de Riftbound en negro',
+    imagePath: '/assets/playmat/logo/logoRiftBound.png',
+    filters: { hue: 0, brightness: 0, contrast: 100, saturate: 100, invert: 0 }
+  }
 };
 
 // Configuraciones de playmats prearmados
@@ -169,6 +230,9 @@ export default function PlaymatEditor() {
   const [overlayImage, setOverlayImage] = useState<OverlayImage | null>(null);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [selectedShape, setSelectedShape] = useState<string | null>(null);
+  const [logos, setLogos] = useState<Logo[]>([]);
+  const [selectedLogo, setSelectedLogo] = useState<string | null>(null);
+  const [selectedLogoType, setSelectedLogoType] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [lastUsedColor, setLastUsedColor] = useState<string>('#FF0000');
@@ -232,6 +296,84 @@ export default function PlaymatEditor() {
     }
   };
 
+  // Funciones para manejar logos
+  const addLogo = (logoKey: keyof typeof AVAILABLE_LOGOS) => {
+    const logoConfig = AVAILABLE_LOGOS[logoKey];
+    
+    // Cargar imagen para obtener dimensiones reales
+    const img = new window.Image();
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const baseSize = 120;
+      
+      const newLogo: Logo = {
+        id: Date.now().toString(),
+        src: logoConfig.imagePath,
+        x: 100,
+        y: 100,
+        width: baseSize * aspectRatio,
+        height: baseSize,
+        opacity: 1,
+        rotation: 0,
+        layer: 'front',
+        aspectRatio: aspectRatio,
+        filters: logoConfig.filters // Usar los filtros predefinidos del logo
+      };
+      
+      setLogos(prevLogos => [...prevLogos, newLogo]);
+      setSelectedLogo(newLogo.id);
+      // Deseleccionar formas cuando se selecciona un logo
+      setSelectedShape(null);
+    };
+    
+    img.onerror = () => {
+      console.error('Error loading logo image:', logoConfig.imagePath);
+      // Fallback con aspect ratio 1:1
+      const newLogo: Logo = {
+        id: Date.now().toString(),
+        src: logoConfig.imagePath,
+        x: 100,
+        y: 100,
+        width: 120,
+        height: 120,
+        opacity: 1,
+        rotation: 0,
+        layer: 'front',
+        aspectRatio: 1,
+        filters: logoConfig.filters // Usar los filtros predefinidos del logo
+      };
+      
+      setLogos(prevLogos => [...prevLogos, newLogo]);
+      setSelectedLogo(newLogo.id);
+      setSelectedShape(null);
+    };
+    
+    img.src = logoConfig.imagePath;
+  };
+
+  const updateLogo = (id: string, updates: Partial<Logo>) => {
+    setLogos(logos.map(logo => {
+      if (logo.id === id) {
+        const updatedLogo = { ...logo, ...updates };
+        
+        // Si se está actualizando la altura (tamaño), mantener la proporción original
+        if (updates.height !== undefined) {
+          updatedLogo.width = updates.height * logo.aspectRatio;
+        }
+        
+        return updatedLogo;
+      }
+      return logo;
+    }));
+  };
+
+  const deleteLogo = (id: string) => {
+    setLogos(logos.filter(logo => logo.id !== id));
+    if (selectedLogo === id) {
+      setSelectedLogo(null);
+    }
+  };
+
   const loadPredefinedPlaymat = (playmatKey: keyof typeof PREDEFINED_PLAYMATS) => {
     const playmat = PREDEFINED_PLAYMATS[playmatKey];
     
@@ -278,12 +420,17 @@ export default function PlaymatEditor() {
     
     console.log(`Cargando modelo de Riftbound: ${model.name}...`);
     setSelectedModel(modelKey); // Guardar el modelo seleccionado
+    
+    // Aplicar márgenes de 5px si usa fancyLogo.png
+    const usesFancyLogo = model.imagePath.includes('fancyLogo.png');
+    const margin = usesFancyLogo ? 20 : 0;
+    
     setOverlayImage({
       src: model.imagePath,
-      x: 0,
-      y: 0,
-      width: DISPLAY_WIDTH,
-      height: DISPLAY_HEIGHT,
+      x: margin,
+      y: margin,
+      width: DISPLAY_WIDTH - (margin * 2),
+      height: DISPLAY_HEIGHT - (margin * 2),
       opacity: 1,
       filters: model.filters // Usar los filtros predefinidos del modelo
     });
@@ -331,6 +478,11 @@ export default function PlaymatEditor() {
     return `sepia(${sepia}%) hue-rotate(${filters.hue}deg) brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%) invert(${filters.invert}%)`;
   };
 
+  const getLogoFilter = (filters: Logo['filters']) => {
+    const sepia = filters.sepia || 0;
+    return `sepia(${sepia}%) hue-rotate(${filters.hue}deg) brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%) invert(${filters.invert}%)`;
+  };
+
   const handleMouseDown = (e: React.MouseEvent, shapeId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -347,10 +499,30 @@ export default function PlaymatEditor() {
     });
     setIsDragging(true);
     setSelectedShape(shapeId);
+    setSelectedLogo(null);
+  };
+
+  const handleLogoMouseDown = (e: React.MouseEvent, logoId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const logo = logos.find(l => l.id === logoId);
+    if (!logo) return;
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setDragOffset({
+      x: e.clientX - rect.left - logo.x,
+      y: e.clientY - rect.top - logo.y
+    });
+    setIsDragging(true);
+    setSelectedLogo(logoId);
+    setSelectedShape(null);
   };
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!isDragging || !selectedShape || !containerRef.current) return;
+    if (!isDragging || !containerRef.current) return;
 
     e.preventDefault();
     
@@ -358,8 +530,12 @@ export default function PlaymatEditor() {
     const x = Math.max(0, Math.min(rect.width - 50, e.clientX - rect.left - dragOffset.x));
     const y = Math.max(0, Math.min(rect.height - 50, e.clientY - rect.top - dragOffset.y));
 
-    updateShape(selectedShape, { x, y });
-  }, [isDragging, selectedShape, dragOffset]);
+    if (selectedShape) {
+      updateShape(selectedShape, { x, y });
+    } else if (selectedLogo) {
+      updateLogo(selectedLogo, { x, y });
+    }
+  }, [isDragging, selectedShape, selectedLogo, dragOffset]);
 
   const handleMouseUp = () => {
     setIsDragging(false);
@@ -679,6 +855,59 @@ export default function PlaymatEditor() {
               )}
                          </div>
 
+                         {/* Logo Tools */}
+             <div className="bg-gray-700 rounded-lg shadow-lg p-8">
+               <div className="flex justify-between items-center mb-4">
+                 <h2 className="text-xl font-semibold text-white">Logos</h2>
+                 <div className="flex items-center gap-2">
+                   <span className="text-sm text-gray-300 bg-gray-600 px-2 py-1 rounded">
+                     {logos.length} logos
+                   </span>
+                 </div>
+               </div>
+               
+               <div className="space-y-3">
+                 <p className="text-sm text-gray-300">
+                   Agrega logos que puedes escalar y posicionar delante o detrás del playmat
+                 </p>
+                 
+                 <div className="space-y-3">
+                   <select
+                     value={selectedLogoType}
+                     onChange={(e) => setSelectedLogoType(e.target.value)}
+                     className="w-full p-3 border border-gray-500 rounded-lg bg-gray-600 text-white focus:border-blue-400 focus:outline-none"
+                   >
+                     <option value="" disabled>Selecciona un logo...</option>
+                     {Object.entries(AVAILABLE_LOGOS).map(([key, logo]) => (
+                       <option key={key} value={key}>
+                         {logo.name} - {logo.description}
+                       </option>
+                     ))}
+                   </select>
+                   
+                   <button
+                     onClick={() => {
+                       if (selectedLogoType) {
+                         addLogo(selectedLogoType as keyof typeof AVAILABLE_LOGOS);
+                         setSelectedLogoType('');
+                       }
+                     }}
+                     disabled={!selectedLogoType}
+                     className="w-full p-3 border-2 border-blue-500 rounded-lg hover:border-blue-400 hover:bg-blue-900 transition-colors bg-blue-600 text-white font-medium flex items-center justify-center gap-3 disabled:bg-gray-500 disabled:border-gray-400 disabled:cursor-not-allowed"
+                   >
+                     <span className="text-xl">➕</span>
+                     Agregar Logo Seleccionado
+                   </button>
+                 </div>
+                 
+                 {logos.length > 0 && (
+                   <div className="mt-3 p-2 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
+                     💡 Selecciona un logo para escalarlo y ajustar su posición
+                   </div>
+                 )}
+               </div>
+             </div>
+
                          {/* Shape Tools */}
              <div className="bg-gray-700 rounded-lg shadow-lg p-8">
                <div className="flex justify-between items-center mb-4">
@@ -810,27 +1039,171 @@ export default function PlaymatEditor() {
                   </div>
                 )}
                 
+                {/* Render logos behind overlay */}
+                {logos.filter(logo => logo.layer === 'behind').map((logo) => (
+                  <div
+                    key={logo.id}
+                    className={`absolute cursor-move ${
+                      selectedLogo === logo.id ? 'ring-2 ring-green-500 ring-offset-2' : ''
+                    }`}
+                    style={{
+                      left: logo.x,
+                      top: logo.y,
+                      width: logo.width,
+                      height: logo.height,
+                      transform: `rotate(${logo.rotation}deg)`,
+                      opacity: logo.opacity,
+                      pointerEvents: 'auto',
+                      zIndex: 1,
+                    }}
+                    onMouseDown={(e) => handleLogoMouseDown(e, logo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLogo(logo.id);
+                      setSelectedShape(null);
+                    }}
+                  >
+                    <img
+                      src={logo.src}
+                      alt="Logo"
+                      className="w-full h-full object-contain"
+                      style={{ filter: getLogoFilter(logo.filters) }}
+                      draggable={false}
+                    />
+                    
+                    {/* Control buttons for each logo - only show when selected */}
+                    {selectedLogo === logo.id && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteLogo(logo.id);
+                          }}
+                          className="absolute -top-3 -right-3 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-700 transition-colors z-20 shadow-lg"
+                          title="Eliminar logo"
+                          style={{ pointerEvents: 'auto' }}
+                        >
+                          ×
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newLogo: Logo = {
+                              ...logo,
+                              id: Date.now().toString(),
+                              x: logo.x + 20,
+                              y: logo.y + 20
+                            };
+                            setLogos([...logos, newLogo]);
+                            setSelectedLogo(newLogo.id);
+                            setSelectedShape(null);
+                          }}
+                          className="absolute -top-3 -left-3 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-blue-700 transition-colors z-20 shadow-lg"
+                          title="Duplicar logo"
+                          style={{ pointerEvents: 'auto' }}
+                        >
+                          +
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+
                 {overlayImage && (
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div 
+                    className={`absolute pointer-events-none ${overlayImage.x > 0 ? 'inset-0 flex items-center justify-center' : 'inset-0'}`} 
+                    style={{ zIndex: 2 }}
+                  >
                     <img
                       src={overlayImage.src}
                       alt="Overlay"
                       onLoad={() => console.log('Overlay image loaded successfully')}
                       onError={(e) => console.error('Error loading overlay image:', e)}
                       style={{
-                        position: 'absolute',
-                        left: overlayImage.x,
-                        top: overlayImage.y,
+                        position: overlayImage.x > 0 ? 'relative' : 'absolute',
+                        left: overlayImage.x > 0 ? 'auto' : overlayImage.x,
+                        top: overlayImage.x > 0 ? 'auto' : overlayImage.y,
                         width: overlayImage.width,
                         height: overlayImage.height,
                         opacity: overlayImage.opacity,
                         filter: getCSSFilter(overlayImage.filters),
-                        pointerEvents: 'none'
+                        pointerEvents: 'none',
+                        objectFit: 'contain'
                       }}
                     />
                   </div>
                 )}
                 
+                {/* Render logos in front of overlay */}
+                {logos.filter(logo => logo.layer === 'front').map((logo) => (
+                  <div
+                    key={logo.id}
+                    className={`absolute cursor-move ${
+                      selectedLogo === logo.id ? 'ring-2 ring-green-500 ring-offset-2' : ''
+                    }`}
+                    style={{
+                      left: logo.x,
+                      top: logo.y,
+                      width: logo.width,
+                      height: logo.height,
+                      transform: `rotate(${logo.rotation}deg)`,
+                      opacity: logo.opacity,
+                      pointerEvents: 'auto',
+                      zIndex: 3,
+                    }}
+                    onMouseDown={(e) => handleLogoMouseDown(e, logo.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedLogo(logo.id);
+                      setSelectedShape(null);
+                    }}
+                  >
+                    <img
+                      src={logo.src}
+                      alt="Logo"
+                      className="w-full h-full object-contain"
+                      style={{ filter: getLogoFilter(logo.filters) }}
+                      draggable={false}
+                    />
+                    
+                    {/* Control buttons for each logo - only show when selected */}
+                    {selectedLogo === logo.id && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteLogo(logo.id);
+                          }}
+                          className="absolute -top-3 -right-3 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-red-700 transition-colors z-20 shadow-lg"
+                          title="Eliminar logo"
+                          style={{ pointerEvents: 'auto' }}
+                        >
+                          ×
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newLogo: Logo = {
+                              ...logo,
+                              id: Date.now().toString(),
+                              x: logo.x + 20,
+                              y: logo.y + 20
+                            };
+                            setLogos([...logos, newLogo]);
+                            setSelectedLogo(newLogo.id);
+                            setSelectedShape(null);
+                          }}
+                          className="absolute -top-3 -left-3 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm hover:bg-blue-700 transition-colors z-20 shadow-lg"
+                          title="Duplicar logo"
+                          style={{ pointerEvents: 'auto' }}
+                        >
+                          +
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ))}
+
                                                   {shapes.map((shape) => (
                    <div
                      key={shape.id}
@@ -1089,6 +1462,64 @@ export default function PlaymatEditor() {
                </div>
              )}
 
+             {/* Logo Properties Panel */}
+             {selectedLogo && logos.find(l => l.id === selectedLogo) && (
+               <div className="mt-4 bg-gray-700 rounded-lg shadow-lg p-4">
+                 <h3 className="text-lg font-semibold mb-3 text-white">Propiedades del Logo Seleccionado</h3>
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 items-end">
+                   <div>
+                     <label className="block text-sm font-medium mb-2 text-white">Tamaño</label>
+                     <div className="space-y-2">
+                       <input
+                         type="range"
+                         min="20"
+                         max="400"
+                         value={logos.find(l => l.id === selectedLogo)?.height || 120}
+                         onChange={(e) => updateLogo(selectedLogo, { height: parseInt(e.target.value) })}
+                         className="w-full"
+                       />
+                       <div className="flex gap-2 items-center justify-center">
+                         <input
+                           type="number"
+                           min="20"
+                           max="400"
+                           value={logos.find(l => l.id === selectedLogo)?.height || 120}
+                           onChange={(e) => updateLogo(selectedLogo, { height: parseInt(e.target.value) || 20 })}
+                           onKeyDown={(e) => e.stopPropagation()}
+                           className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
+                         />
+                         <span className="text-sm text-gray-300">px</span>
+                       </div>
+                     </div>
+                   </div>
+                   <div>
+                     <label className="block text-sm font-medium mb-2 text-white">Posición</label>
+                     <div className="space-y-2">
+                       <select
+                         value={logos.find(l => l.id === selectedLogo)?.layer || 'front'}
+                         onChange={(e) => updateLogo(selectedLogo, { layer: e.target.value as 'behind' | 'front' })}
+                         className="w-full p-2 border border-gray-500 rounded bg-gray-600 text-white focus:border-blue-400 focus:outline-none"
+                       >
+                         <option value="front">Delante</option>
+                         <option value="behind">Detrás</option>
+                       </select>
+                       <div className="text-xs text-gray-300 text-center">
+                         {logos.find(l => l.id === selectedLogo)?.layer === 'front' ? 'del playmat' : 'del playmat'}
+                       </div>
+                     </div>
+                   </div>
+                   <div>
+                     <button
+                       onClick={() => deleteLogo(selectedLogo)}
+                       className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
+                     >
+                       Eliminar Logo
+                     </button>
+                   </div>
+                 </div>
+               </div>
+             )}
+
              {/* Overlay Controls Panel */}
              {overlayImage && (
                <div className="mt-4 bg-gray-700 rounded-lg shadow-lg p-4">
@@ -1178,7 +1609,7 @@ export default function PlaymatEditor() {
                      <span className="text-2xl">🎮</span>
                                             <div>
                          <h3 className="font-semibold text-white">Riftbound Playmats</h3>                    
-                         <p className="text-sm text-gray-300">13 opciones disponibles</p>
+                         <p className="text-sm text-gray-300">15 opciones disponibles</p>
                        </div>
                    </div>
                    
