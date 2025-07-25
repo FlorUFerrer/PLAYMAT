@@ -1576,6 +1576,36 @@ export default function PlaymatEditor() {
                      </div>
                    </div>
                    <div>
+                     <label className="block text-sm font-medium mb-2 text-white">Transparencia</label>
+                     <div className="space-y-2">
+                       <input
+                         type="range"
+                         min="0"
+                         max="1"
+                         step="0.01"
+                         value={logos.find(l => l.id === selectedLogo)?.opacity || 1}
+                         onChange={(e) => updateLogo(selectedLogo, { opacity: parseFloat(e.target.value) })}
+                         className="w-full"
+                       />
+                       <div className="flex gap-2 items-center justify-center">
+                         <input
+                           type="number"
+                           min="0"
+                           max="1"
+                           step="0.01"
+                           value={logos.find(l => l.id === selectedLogo)?.opacity || 1}
+                           onChange={(e) => updateLogo(selectedLogo, { opacity: parseFloat(e.target.value) || 0 })}
+                           onKeyDown={(e) => e.stopPropagation()}
+                           className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
+                         />
+                         <span className="text-sm text-gray-300">%</span>
+                       </div>
+                       <div className="text-xs text-gray-300 text-center">
+                         {Math.round((logos.find(l => l.id === selectedLogo)?.opacity || 1) * 100)}% visible
+                       </div>
+                     </div>
+                   </div>
+                   <div>
                      <label className="block text-sm font-medium mb-2 text-white">Posición</label>
                      <div className="space-y-2">
                        <select
@@ -1592,6 +1622,31 @@ export default function PlaymatEditor() {
                      </div>
                    </div>
                    <div>
+                     <label className="block text-sm font-medium mb-2 text-white">Rotación</label>
+                     <div className="space-y-2">
+                       <input
+                         type="range"
+                         min="0"
+                         max="360"
+                         value={logos.find(l => l.id === selectedLogo)?.rotation || 0}
+                         onChange={(e) => updateLogo(selectedLogo, { rotation: parseInt(e.target.value) })}
+                         className="w-full"
+                       />
+                       <div className="flex gap-2 items-center justify-center">
+                         <input
+                           type="number"
+                           min="0"
+                           max="360"
+                           value={logos.find(l => l.id === selectedLogo)?.rotation || 0}
+                           onChange={(e) => updateLogo(selectedLogo, { rotation: parseInt(e.target.value) || 0 })}
+                           onKeyDown={(e) => e.stopPropagation()}
+                           className="w-16 h-8 px-2 border border-gray-500 rounded text-sm bg-gray-600 text-white"
+                         />
+                         <span className="text-sm text-gray-300">°</span>
+                       </div>
+                     </div>
+                   </div>
+                   <div>
                      <button
                        onClick={() => deleteLogo(selectedLogo)}
                        className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
@@ -1599,6 +1654,10 @@ export default function PlaymatEditor() {
                        Eliminar Logo
                      </button>
                    </div>
+                 </div>
+                 
+                 <div className="mt-3 p-2 bg-blue-900 border border-blue-600 rounded text-sm text-blue-200">
+                   💡 <strong>Tip:</strong> Ajusta la transparencia para crear efectos sutiles o combinar logos con el fondo
                  </div>
                </div>
              )}
